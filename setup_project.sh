@@ -55,18 +55,18 @@ cat Helpers/config.json
 echo "Enter the version or identifier (e.g., Morel121):"
 read input_val
 
-PARENT_DIR="attendance_tracker_${input_val}"
+main="attendance_tracker_${input_val}"
 
 # Create the tree structure immediately to avoid "No such file" errors
-echo "Creating directory structure in $PARENT_DIR..."
-mkdir -p "$PARENT_DIR/Helpers"
-mkdir -p "$PARENT_DIR/reports"
+echo "Creating directory structure in $..."
+mkdir -p "$main/Helpers"
+mkdir -p "$main/reports"
 
 # --- 2. FILE CREATION & POPULATION ---
 echo "Populating files..."
 
 # Create the Python logic file based on your source code image
-cat <<EOF > "$PARENT_DIR/attendance_checker.py"
+cat <<EOF > "$main/attendance_checker.py"
 import csv
 import json
 import os
@@ -115,7 +115,7 @@ if _name_ == "_main_":
 EOF
 
 # Create the assets.csv with the specific data from your image
-cat <<EOF > "$PARENT_DIR/Helpers/assets.csv"
+cat <<EOF > "$main/Helpers/assets.csv"
 Email,Names,Attendance Count,Absence Count
 alice@example.com,Alice Johnson,14,1
 bob@example.com,Bob Smith,7,8
@@ -124,10 +124,10 @@ diana@example.com,Diana Prince,15,0
 EOF
 
 # Create the initial config.json
-echo '{"total_sessions": 15, "run_mode": "live", "thresholds": {"warning": 75, "failure": 50}}' > "$PARENT_DIR/Helpers/config.json"
+echo '{"total_sessions": 15, "run_mode": "live", "thresholds": {"warning": 75, "failure": 50}}' > "$main/Helpers/config.json"
 
 # Create an empty log file
-touch "$PARENT_DIR/reports/reports.log"
+touch "$main/reports/reports.log"
 
 # --- 3. DYNAMIC CONFIGURATION (STREAM EDITING) ---
 echo "--- Project Configuration ---"
@@ -138,10 +138,10 @@ read new_failure
 
 # Use 'sed' to update the config file inside the newly created directory
 # This fixes the "No such file or directory" error by using the $PARENT_DIR variable
-sed -i "s/\"warning\": [0-9]*/\"warning\": $new_warning/" "$PARENT_DIR/Helpers/config.json"
-sed -i "s/\"failure\": [0-9]*/\"failure\": $new_failure/" "$PARENT_DIR/Helpers/config.json"
+sed -i "s/\"warning\": [0-9]*/\"warning\": $new_warning/" "$main/Helpers/config.json"
+sed -i "s/\"failure\": [0-9]*/\"failure\": $new_failure/" "$main/Helpers/config.json"
 
 echo "------------------------------------------------"
 echo "SETUP SUCCESSFUL!"
-echo "Architecture created for: $PARENT_DIR"
-echo "To run the checker: cd $PARENT_DIR && python3 attendance_checker.py"
+echo "Architecture created for: $main"
+echo "To run the checker: cd $main && python3 attendance_checker.py"
