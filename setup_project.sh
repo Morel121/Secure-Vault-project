@@ -46,4 +46,102 @@ else
 fi
 
 echo -e "\nSetup Complete. Current config:"
-cat Helpers/config.json
+cat Helpers/config.json 
+
+
+
+# --- 1. DIRECTORY ARCHITECTURE ---
+# Prompt the user for a version name (e.g., Morel121)
+echo "Enter the version or identifier (e.g., Morel121):"
+read input_val
+
+PARENT_DIR="attendance_tracker_${input_val}"
+
+# Create the tree structure immediately to avoid "No such file" errors
+echo "Creating directory structure in $PARENT_DIR..."
+mkdir -p "$PARENT_DIR/Helpers"
+mkdir -p "$PARENT_DIR/reports"
+
+# --- 2. FILE CREATION & POPULATION ---
+echo "Populating files..."
+
+# Create the Python logic file based on your source code image
+cat <<EOF > "$PARENT_DIR/attendance_checker.py"
+import csv
+import json
+import os
+from datetime import datetime
+
+def run_attendance_check():
+    # 1. Load Config
+    with open('Helpers/config.json', 'r') as f:
+        config = json.load(f)
+
+    # 2. Archive old reports.log if it exists
+    if os.path.exists('reports/reports.log'):
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        os.rename('reports/reports.log', f'reports/reports_{timestamp}.log.archive')
+
+    # 3. Process Data
+    with open('Helpers/assets.csv', mode='r') as f, open('reports/reports.log', 'w') as log:
+        reader = csv.DictReader(f)
+        total_sessions = config['total_sessions']
+        
+        log.write(f"--- Attendance Report Run: {datetime.now()} ---\n")
+        
+        for row in reader:
+            name = row['Names']
+            email = row['Email']
+            attended = int(row['Attendance Count'])
+            
+            # Percentage Calculation
+            attendance_pct = (attended / total_sessions) * 100
+            
+            message = ""
+            if attendance_pct < config['thresholds']['failure']:
+                message = f"URGENT: {name}, your attendance is {attendance_pct:.1f}%. You will fail this class."
+            elif attendance_pct < config['thresholds']['warning']:
+                message = f"WARNING: {name}, your attendance is {attendance_pct:.1f}%. Please be careful."
+            
+            if message:
+                if config['run_mode'] == "live":
+                    log.write(f"[{datetime.now()}] ALERT SENT TO {email}: {message}\n")
+                    print(f"Logged alert for {name}")
+                else:
+                    print(f"[DRY RUN] Email to {email}: {message}")
+
+if _name_ == "_main_":
+    run_attendance_check()
+EOF
+
+# Create the assets.csv with the specific data from your image
+cat <<EOF > "$PARENT_DIR/Helpers/assets.csv"
+Email,Names,Attendance Count,Absence Count
+alice@example.com,Alice Johnson,14,1
+bob@example.com,Bob Smith,7,8
+charlie@example.com,Charlie Davis,4,11
+diana@example.com,Diana Prince,15,0
+EOF
+
+# Create the initial config.json
+echo '{"total_sessions": 15, "run_mode": "live", "thresholds": {"warning": 75, "failure": 50}}' > "$PARENT_DIR/Helpers/config.json"
+
+# Create an empty log file
+touch "$PARENT_DIR/reports/reports.log"
+
+# --- 3. DYNAMIC CONFIGURATION (STREAM EDITING) ---
+echo "--- Project Configuration ---"
+echo "Enter new Warning threshold (default 75):"
+read new_warning
+echo "Enter new Failure threshold (default 50):"
+read new_failure
+
+# Use 'sed' to update the config file inside the newly created directory
+# This fixes the "No such file or directory" error by using the $PARENT_DIR variable
+sed -i "s/\"warning\": [0-9]*/\"warning\": $new_warning/" "$PARENT_DIR/Helpers/config.json"
+sed -i "s/\"failure\": [0-9]*/\"failure\": $new_failure/" "$PARENT_DIR/Helpers/config.json"
+
+echo "------------------------------------------------"
+echo "SETUP SUCCESSFUL!"
+echo "Architecture created for: $PARENT_DIR"
+echo "To run the checker: cd $PARENT_DIR && python3 attendance_checker.py"
